@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 torch.set_float32_matmul_precision('high')
 
+device = "cuda" if torch.cuda.is_available() else "mps" if torch.mps.is_available() else "cpu"
 ## Environment
 N_ITEMS = 150
 N_PEOPLE = 1750
@@ -40,14 +41,16 @@ model = ReC(
     n_items = N_ITEMS,
     n_people = N_PEOPLE,
     embedding_dim = EMBEDDING_DIM
-)
+).to(device)
 value_network = Value_Network(
     n_items = N_ITEMS,
     n_people = N_PEOPLE,
     embedding_dim = EMBEDDING_DIM
-)
-model = torch.compile(model.cuda())
-value_network = torch.compile(value_network.cuda())
+).to(device)
+if device == "cuda":
+    model = torch.compile(model.to(device))
+    value_network = torch.compile(value_network.to(device))
+
 
 ## Optimizer
 optimizer = torch.optim.AdamW(model.parameters(), lr = LEARNING_RATE, weight_decay=0.01)
@@ -61,18 +64,18 @@ def main():
     temp_rewards = 0.0
     for i in range(1000000):
         people = np.random.choice(range(N_PEOPLE), size = BATCH_SIZE, replace = False)
-        people = torch.tensor(people, dtype = torch.long, device = "cuda")
+        people = torch.tensor(people, dtype = torch.long, device = device)
         reco = get_recommendations(people, model, num_recommendations = RECO_SIZE)
         rewards = env.query(people.cpu().numpy(), reco.cpu().numpy())
         avg_rewards.append(rewards.sum())
         
         ## Value Network
         value_optimizer.zero_grad()
-        value_loss = ((torch.tensor(rewards, device = "cuda").reshape(-1,1)/5 - value_network(people)).pow(2)).mean()
+        value_loss = ((torch.tensor(rewards, device = device).reshape(-1,1)/5 - value_network(people)).pow(2)).mean()
         value_loss.backward()
         value_optimizer.step()
     
-        with torch.no_grad(): rewards_ = torch.tensor(rewards, device = "cuda").reshape(-1,1)/5 - value_network(people)
+        with torch.no_grad(): rewards_ = torch.tensor(rewards, device = device).reshape(-1,1)/5 - value_network(people)
         
         preds = model(people)
 
