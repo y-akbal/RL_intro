@@ -16,9 +16,28 @@ class Environment:
     def check(self, x:np.ndarray, y:np.ndarray):
         mask = np.random.binomial(1, 1 - self.epsilon, size = y.shape) ## Sometimes we do not like the item we are recommended
         return np.sum(np.isin(x, np.where(mask, y, -1))) 
+    
+    def order_check(self, x:np.ndarray, y:np.ndarray):
+        pass
+        
+
+
+
+
+
+
     def query(self, people:List[int], recommendations:np.ndarray) -> float:
         people_under_consideration = self.people[people, :]
         return np.array([self.check(recommendations[i], people_under_consideration[i]) for i in range(len(people))])
+    
+
+    def ordered_query(self, people:List[int], recommendations:np.ndarray) -> float:
+        people_under_consideration = self.people[people, :]
+
+
+
+
+        
 
 """
 env = Environment(

@@ -58,6 +58,12 @@ def main():
         rewards = env.query(people.cpu().numpy(), reco.cpu().numpy())
         avg_rewards.append(rewards.sum())
         loss = -(torch.tensor(rewards, device = people.device).reshape(-1,1)*model(people).softmax(-1).log().gather(1, reco)).mean()
+
+        # Check for NaN in loss
+        if torch.isnan(loss):
+            print(f"Skipping update at iteration {i} due to NaN loss")
+            continue
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()

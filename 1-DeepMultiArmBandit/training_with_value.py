@@ -50,7 +50,7 @@ model = torch.compile(model.cuda())
 value_network = torch.compile(value_network.cuda())
 
 ## Optimizer
-optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
+optimizer = torch.optim.AdamW(model.parameters(), lr = LEARNING_RATE, weight_decay=0.01)
 value_optimizer = torch.optim.Adam(value_network.parameters(), lr = 0.00001)
 
 def main():
@@ -74,8 +74,14 @@ def main():
     
         with torch.no_grad(): rewards_ = torch.tensor(rewards, device = "cuda").reshape(-1,1)/5 - value_network(people)
         
+        preds = model(people)
+
+        clipped = torch.clamp(preds, -3, 3)
+                    
         optimizer.zero_grad()
-        loss = -((rewards_)*model(people).softmax(-1).log().gather(1, reco)).mean()
+        loss = -((rewards_)*clipped.softmax(-1).log().gather(1, reco)).mean()
+
+
         loss.backward()
         optimizer.step()
 
