@@ -6,28 +6,23 @@ from environment import Environment
 from model import ReC, get_recommendations
 import numpy as np
 from matplotlib import pyplot as plt
+from tools import GetIndex
 torch.set_float32_matmul_precision('high')
 
 ## Environment
-N_ITEMS = 350
-N_PEOPLE = 2750
-LIKES = 10
+N_ITEMS = 1000
+N_PEOPLE = 5000
+LIKES = 5
 EPSILON = 0.1
 SEED = 42
-##
 ## Model Params
 EMBEDDING_DIM = 256
-##
 ## Training Params
 BATCH_SIZE = 256
-EPOCHS = 1000
-LEARNING_RATE = 0.001
-##
+EPOCHS = 1000000
+LEARNING_RATE = 0.0001
 ## Number of Recos
 RECO_SIZE = 5
-## 
-
-
 ## Enviromnet
 env = Environment(
     n_people = N_PEOPLE,
@@ -41,8 +36,8 @@ model = ReC(
     n_items = N_ITEMS,
     n_people = N_PEOPLE,
     embedding_dim = EMBEDDING_DIM
-)
-model = torch.compile(model.cuda())
+).cuda()
+model = torch.compile(model)
 ## Optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
@@ -51,19 +46,18 @@ def main():
     ## Choose as subset of people, get their recommendations and query the environment
     ## 
     avg_rewards = []
-    for i in range(1000000):
-        people = np.random.choice(range(N_PEOPLE), size = BATCH_SIZE, replace = False)
+    batcher = GetIndex(N_PEOPLE, BATCH_SIZE)
+    for i in range(EPOCHS):
+        people = batcher.take()
         people = torch.tensor(people, dtype = torch.long, device = "cuda")
+        model.eval()
         reco = get_recommendations(people, model, num_recommendations = RECO_SIZE)
         rewards = env.query(people.cpu().numpy(), reco.cpu().numpy())
         avg_rewards.append(rewards.sum())
-        loss = -(torch.tensor(rewards, device = people.device).reshape(-1,1)*model(people).softmax(-1).log().gather(1, reco)).mean()
-
-        # Check for NaN in loss
-        if torch.isnan(loss):
-            print(f"Skipping update at iteration {i} due to NaN loss")
-            continue
-
+        # Loss
+        model.train()
+        loss = -(torch.tensor(rewards, device = people.device).reshape(-1,1)*model(people, add_noise = True).softmax(-1).log().gather(1, reco)).mean()
+        # Collect Gradients
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -73,7 +67,14 @@ def main():
             print("Rewards: ", rewards)
     plt.figure()
     plt.plot(avg_rewards)
+    plt.title("Training")
+    plt.xlabel("Epochs")
+    plt.ylabel("Rewards")
+    plt.savefig("training_no_value.png")
     plt.show()
+  
+
+
 
 if __name__ == "__main__":
     main()

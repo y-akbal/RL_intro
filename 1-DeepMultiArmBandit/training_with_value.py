@@ -6,28 +6,26 @@ from environment import Environment
 from model import ReC, get_recommendations, Value_Network
 import numpy as np
 from matplotlib import pyplot as plt
+from tools import GetIndex
 torch.set_float32_matmul_precision('high')
 
 device = "cuda" if torch.cuda.is_available() else "mps" if torch.mps.is_available() else "cpu"
 ## Environment
-N_ITEMS = 150
-N_PEOPLE = 1750
-LIKES = 10
+
+## Environment
+N_ITEMS =  350
+N_PEOPLE = 5000
+LIKES = 5
 EPSILON = 0.1
 SEED = 42
-##
 ## Model Params
 EMBEDDING_DIM = 256
-##
 ## Training Params
 BATCH_SIZE = 256
-EPOCHS = 1000
-LEARNING_RATE = 0.00001
-##
+EPOCHS = 1000000
+LEARNING_RATE = 0.0001
 ## Number of Recos
 RECO_SIZE = 5
-## 
-
 ## Enviromnet
 env = Environment(
     n_people = N_PEOPLE,
@@ -47,14 +45,14 @@ value_network = Value_Network(
     n_people = N_PEOPLE,
     embedding_dim = EMBEDDING_DIM
 ).to(device)
-if device == "cuda":
+if device == "cuda" or device == "cpu":
     model = torch.compile(model.to(device))
     value_network = torch.compile(value_network.to(device))
 
 
 ## Optimizer
 optimizer = torch.optim.AdamW(model.parameters(), lr = LEARNING_RATE, weight_decay=0.01)
-value_optimizer = torch.optim.Adam(value_network.parameters(), lr = 0.00001)
+value_optimizer = torch.optim.AdamW(value_network.parameters(), lr = 0.001)
 
 def main():
     ## For some number of time 
@@ -62,8 +60,9 @@ def main():
     ## 
     avg_rewards = []
     temp_rewards = 0.0
+    batcher = GetIndex(N_PEOPLE, BATCH_SIZE)
     for i in range(1000000):
-        people = np.random.choice(range(N_PEOPLE), size = BATCH_SIZE, replace = False)
+        people = batcher.take()
         people = torch.tensor(people, dtype = torch.long, device = device)
         reco = get_recommendations(people, model, num_recommendations = RECO_SIZE)
         rewards = env.query(people.cpu().numpy(), reco.cpu().numpy())
@@ -75,16 +74,13 @@ def main():
         value_loss.backward()
         value_optimizer.step()
     
-        with torch.no_grad(): rewards_ = torch.tensor(rewards, device = device).reshape(-1,1)/5 - value_network(people)
+        with torch.no_grad(): 
+            rewards_ = torch.tensor(rewards, device = device).reshape(-1,1)/5 - value_network(people)
+            rewards_ = torch.clamp(rewards_, -0.5, 0.5)
         
-        preds = model(people)
-
-        clipped = torch.clamp(preds, -3, 3)
-                    
         optimizer.zero_grad()
-        loss = -((rewards_)*clipped.softmax(-1).log().gather(1, reco)).mean()
-
-
+        preds = model(people).clamp(-3, 3)
+        loss = -((rewards_)*preds.softmax(-1).log().gather(1, reco)).mean()
         loss.backward()
         optimizer.step()
 

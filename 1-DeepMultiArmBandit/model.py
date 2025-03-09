@@ -15,19 +15,22 @@ class ReC(nn.Module):
         self.people = nn.Embedding(n_people, embedding_dim)
         self.Network = nn.Sequential(*[
             nn.Linear(embedding_dim, 512),
-            nn.SELU(),
+            nn.GELU(),
+            nn.BatchNorm1d(512, ),
             nn.Linear(512, 768),
-            nn.SELU(),
+            nn.GELU(),
+            nn.BatchNorm1d(768),
             nn.Linear(768, 768),
-            nn.SELU(),
+            nn.GELU(),
+            nn.BatchNorm1d(768),
             nn.Linear(768, 512),
-            nn.SELU(),
+            nn.GELU(),
+            nn.BatchNorm1d(512),
             nn.Linear(512, n_items)
-
         ])
     def forward(self, 
                 people:torch.Tensor,
-                add_noise:bool = True
+                add_noise:bool = False,
                 ) -> torch.Tensor:
         embeddings = self.people(people)
         if add_noise:
@@ -46,11 +49,11 @@ class Value_Network(nn.Module):
         self.people = nn.Embedding(n_people, embedding_dim)
         self.Network = nn.Sequential(*[
             nn.Linear(embedding_dim, 512),
-            nn.SELU(),
+            nn.GELU(),
+            nn.BatchNorm1d(512),
             nn.Linear(512, 512),
-            nn.SELU(),
-            nn.Linear(512, 512),
-            nn.SELU(),
+            nn.GELU(),
+            nn.BatchNorm1d(512),
             nn.Linear(512, 1)
         ])
     def forward(self, 
