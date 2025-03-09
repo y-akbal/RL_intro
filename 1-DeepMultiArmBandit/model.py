@@ -87,7 +87,9 @@ model = ReC(
 
 
 people = torch.tensor([1, 2, 3, 4, 5])
-reco = get_recommendations(people, model, num_recommendations = 2)
+people
+reco = get_recommendations(people, model, num_recommendations = 3)
+reco
 
 from environment import Environment
 
@@ -101,5 +103,5 @@ env = Environment(
 rewards = env.query(people, reco)
 loss = -(torch.tensor(rewards).reshape(-1,1)*model(people).softmax(-1).log().gather(1, reco)).mean()
 loss.backward()
-
-        """
+loss.item()
+"""

@@ -13,7 +13,7 @@ device = "cuda" if torch.cuda.is_available() else "mps" if torch.mps.is_availabl
 ## Environment
 
 ## Environment
-N_ITEMS =  350
+N_ITEMS =  1500
 N_PEOPLE = 5000
 LIKES = 5
 EPSILON = 0.1
@@ -70,12 +70,12 @@ def main():
         
         ## Value Network
         value_optimizer.zero_grad()
-        value_loss = ((torch.tensor(rewards, device = device).reshape(-1,1)/5 - value_network(people)).pow(2)).mean()
+        value_loss = ((torch.tensor(rewards, device = device).reshape(-1,1) - value_network(people)).pow(2)).mean()
         value_loss.backward()
         value_optimizer.step()
     
         with torch.no_grad(): 
-            rewards_ = torch.tensor(rewards, device = device).reshape(-1,1)/5 - value_network(people)
+            rewards_ = torch.tensor(rewards, device = device).reshape(-1,1) - value_network(people)
             rewards_ = torch.clamp(rewards_, -0.5, 0.5)
         
         optimizer.zero_grad()
