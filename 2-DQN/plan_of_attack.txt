@@ -1,0 +1,18 @@
+1 - Set up an enviroment, this enviroment should be capable of batched inference
+    a - Enviroment consist of say 1000 people with some weighted choices, we shall also be learning the ranking,
+    b - The model will also learn the embeddings of these groups as well,
+    c - Make the batch size as large as possible,
+2 - Set up the buffer play, the buffer play shold be able to takes observations in and should be able to produce batches
+3 - Set up the model, the model should be able to make recommendations, and should be able to the ranking automatically. 
+4 - Do the training in torch. Follow gradient descent in the RL book.
+
+## -------- The above is done ---------- ## 
+
+
+TearLiq (Sequential recommendations)
+
+Given the learning and the embeddings of the model, we do Sequential learning: 
+    a - Model(person) -> sigmoid(mask) -> top_k -> Order -> Customer 
+    b - Second model(person, mask) -> top_k - permutation -> Customer -> result?
+    c - For this one you will need to implement the environment carefully, enviroment should allow you to do the stuff carefully.
+

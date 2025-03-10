@@ -9,7 +9,6 @@ class ReC(nn.Module):
                  n_items:int = 100,
                  n_people:int = 10,
                  embedding_dim:int = 10,
-                 
                  ):
         super(ReC, self).__init__()
         self.people = nn.Embedding(n_people, embedding_dim)
