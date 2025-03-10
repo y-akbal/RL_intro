@@ -16,7 +16,7 @@ class Buffer(ABC):
 
 ## Very simple buffer play class that stores the state, action, reward, next state and done in numpy arrays
 ## This is not the most efficient way to store the data but it is simple and easy to understand
-class BufferPlay(Buffer):
+class ReplayBuffer(Buffer):
     def __init__(self, 
                 action_dim:int = 4,
                 state_dim:int = 8,
