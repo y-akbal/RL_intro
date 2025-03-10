@@ -49,15 +49,19 @@ def grad_fn(params, target_params, state, action, reward, next_state, done):
 def param_soft_update(params, target_params, epsilon = SOFT_UPDATE_EPS):
     return jax.tree.map(lambda p, tp: (1.0 - epsilon) * tp + epsilon * p, params, target_params)
     
+
 def main():
     qnetwork = QNetwork(dtype=jnp.bfloat16, features=INT_FEATURES, action_dim=ACTION_DIM)
     params = qnetwork.init(glob_key, jnp.ones((1, STATE_DIM)))
     optimizer = optax.adam(LEARNING_RATE).init(params)
     buffer = ReplayBuffer(action_dim=ACTION_DIM, state_dim=STATE_DIM, buffer_size=BUFFER_SIZE)
 
+
+    
     for iter in range(ITERS):
         
         for _ in range(MAX_EPISODE_LENGTH):
+            
         ## There should be one more loop here
         ## for each step in the environment
         ## you should sample from the buffer
