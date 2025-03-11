@@ -24,11 +24,11 @@ class ReplayBuffer(Buffer):
                 ):
         ## State buffer is 2*state_dim because we are storing the state and next state in the same buffer
         self.state_buffer = np.zeros((buffer_size, 2*state_dim), dtype=np.float32)
-        self.action_buffer = np.zeros((buffer_size, action_dim), dtype=np.float32)
+        self.action_buffer = np.zeros((buffer_size, action_dim), dtype=np.int64)
         self.reward_buffer = np.zeros((buffer_size, 1), dtype=np.float32)
         self.terminate_buffer = np.zeros((buffer_size, 1), dtype=np.float32)
         self.ptr = 0
-        self.buffer_full = 0
+        self.full = 0
 
     def push(self, 
              state:np.ndarray, 
@@ -44,13 +44,10 @@ class ReplayBuffer(Buffer):
         self.ptr += 1
         if self.ptr == self.state_buffer.shape[0]:
             self.ptr = 0
-            self.buffer_full = 1
+            self.full = 1
 
     def sample(self, batch_size:int = 32):
-        if self.buffer_full:
-            idx = np.random.randint(0, self.state_buffer.shape[0], batch_size)
-        else:
-            idx = np.random.randint(0, self.ptr, min(batch_size, self.ptr))
+        idx = np.random.randint(0, self.state_buffer.shape[0], batch_size)
         return {
             "state":self.state_buffer[idx, :self.state_buffer.shape[1]//2],
             "action":self.action_buffer[idx],
@@ -59,7 +56,7 @@ class ReplayBuffer(Buffer):
             "done":self.terminate_buffer[idx]
         }            
 """
-buffer = BufferPlay(
+buffer = ReplayBuffer(
     action_dim=2,
     state_dim=2,
     buffer_size=12
@@ -73,6 +70,8 @@ for i in range(-1,10):
     next_state = np.array([i+1, i+2]),
     done = False
     )
+
+    buffer.sample()["state"]
 
 buffer.action_buffer, buffer.reward_buffer, buffer.state_buffer, buffer.terminate_buffer
 
