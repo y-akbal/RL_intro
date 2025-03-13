@@ -84,7 +84,8 @@ def main():
         
         env = gym.make(ENV_NAME, render_mode=RENDER_MODE, max_episode_steps=MAX_ITERS)
         
-        state, info = env.reset()
+        state_t_2, info = env.reset()
+        state_t_1, info = env.reset()
         ## EPSILON COSINE DECAY
         #EPSILON = EPSILON 
 
@@ -98,9 +99,9 @@ def main():
             else:
                 action = np.asarray(forward(params, state))
                 
-            next_state, reward, terminated, truncated, info = env.step(action)
-            buffer.push(state, action, reward, next_state, terminated+truncated)
-            state = next_state
+            state_t, reward, terminated, truncated, info = env.step(action)
+            buffer.push(state_t_1, action, reward, state_t, terminated+truncated)
+            state_t_1 = state_t
             avr_score.append(reward)
             ## Do the training
             if buffer.full:

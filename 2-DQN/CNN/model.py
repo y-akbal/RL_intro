@@ -3,7 +3,6 @@ from jax import numpy as jnp
 from jax import random
 import flax
 from flax import linen as nn
-
 from typing import List, Any, Callable
 
 class QNetwork(nn.Module):
