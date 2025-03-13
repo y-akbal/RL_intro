@@ -7,11 +7,11 @@ from abc import ABC, abstractmethod
 
 class Buffer(ABC):
     @abstractmethod
-    def push(self, state:np.ndarray, action:np.ndarray, reward:np.ndarray, next_state:np.ndarray, done:bool):
+    def push(self):
         raise NotImplementedError
 
     @abstractmethod
-    def sample(self, batch_size:int = 32):
+    def sample(self):
         raise NotImplementedError
 
 ## Very simple buffer play class that stores the state, action, reward, next state and done in numpy arrays
@@ -29,6 +29,9 @@ class ReplayBuffer(Buffer):
         self.terminate_buffer = np.zeros((buffer_size, 1), dtype=np.float32)
         self.ptr = 0
         self.full = 0
+        self.temp_reward = 0
+
+
 
     def push(self, 
              state:np.ndarray, 
@@ -42,6 +45,7 @@ class ReplayBuffer(Buffer):
         self.reward_buffer[self.ptr] = reward
         self.terminate_buffer[self.ptr] = done
         self.ptr += 1
+        self.temp_reward = (0.95)*self.temp_reward + 0.05*reward
         if self.ptr == self.state_buffer.shape[0]:
             self.ptr = 0
             self.full = 1
@@ -55,25 +59,27 @@ class ReplayBuffer(Buffer):
             "next_state":self.state_buffer[idx, self.state_buffer.shape[1]//2:],
             "done":self.terminate_buffer[idx]
         }            
+    @property
+    def reward(self):
+        return self.temp_reward
 """
 buffer = ReplayBuffer(
-    action_dim=2,
+    action_dim=1,
     state_dim=2,
     buffer_size=12
 )
 
-for i in range(-1,10):
-    buffer.push(
-    state = np.array([i, i+1]),
-    action = np.array([i, i+1]),
-    reward = np.array([i]),
-    next_state = np.array([i+1, i+2]),
-    done = False
-    )
+from model import QNetwork
 
-    buffer.sample()["state"]
+import jax
+from jax import numpy as jnp
 
-buffer.action_buffer, buffer.reward_buffer, buffer.state_buffer, buffer.terminate_buffer
+network = QNetwork(features=[128], action_dim=2, dtype=jnp.float32)
 
-buffer.sample(12)
+params = network.init(jax.random.PRNGKey(42), jnp.ones((1, 2)))
+batch = buffer.sample()
+staes, actions = batch["state"], batch["action"]
+
+jnp.take_along_axis(network.apply(params, staes), actions, axis=1)
+
 """
