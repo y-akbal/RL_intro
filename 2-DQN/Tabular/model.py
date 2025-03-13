@@ -35,7 +35,11 @@ network = QNetwork(dtype=jnp.float32, features=[128, 128, 128], action_dim=4)
 params = network.init(random.PRNGKey(42), 5*jnp.ones((1, 8)))
 q = network.apply(params, jax.random.normal(random.PRNGKey(42), (5, 8)))
 
+q, q.argmax(-1)[:, None]
+jnp.take_along_axis(q, q.argmax(-1)[:, None], axis=1)
+"""
 
+"""
 ln = nn.LayerNorm()
 params = ln.init(random.PRNGKey(42), 5*jnp.ones((1, 4)))
 ln.apply(params, q).mean(-1)"
